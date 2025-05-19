@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ChatBot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: #007bff;
+            color: white;
+            border-radius: 10px 10px 0 0;
+            text-align: center;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message.bot {
+            align-items: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            margin: 5px 0;
+        }
+
+        .user .message-content {
+            background: #007bff;
+            color: white;
+        }
+
+        .bot .message-content {
+            background: #e9ecef;
+            color: black;
+        }
+
+        .controls {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #dee2e6;
+            border-radius: 0 0 10px 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        .send-button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .send-button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>AI ChatBot</h1>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will be added here -->
+        </div>
+        <form class="controls" id="chatForm" autocomplete="off">
+            <input type="text" class="text-input" id="textInput" placeholder="Type your message..." required />
+            <button type="submit" class="send-button">Send</button>
+        </form>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const chatForm = document.getElementById('chatForm');
+        const textInput = document.getElementById('textInput');
+
+        async function sendMessage(text) {
+            // Add user message to chat
+            addMessage(text, 'user');
+            textInput.value = '';
+
+            try {
+                // Get AI response
+                const responseData = await fetch('http://127.0.0.1:5000/generate_response', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const response = await responseData.json();
+                if (response.error) {
+                    throw new Error(response.error);
+                }
+
+                // Add bot message to chat
+                addMessage(response.text, 'bot');
+
+                // Play audio response
+                const audio = new Audio(response.audio);
+                await audio.play();
+
+            } catch (err) {
+                console.error('Error processing message:', err);
+                addMessage('Error processing message.', 'bot');
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = `
+                <div class="message-content">${text}</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = textInput.value.trim();
+            if (text) {
+                await sendMessage(text);
+            }
+        });
+    </script>
+</body>
+
+</html>
